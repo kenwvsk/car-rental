@@ -11,8 +11,8 @@ dotenv.config({path:'./config/config.env'});
 connectDB();
 
 //Route files
-// const cars = require('./routes/cars');
-// const providers = require('./routes/providers');
+const cars = require('./routes/cars');
+const providers = require('./routes/providers');
 const users = require('./routes/users');
 // const bookings = require('./routes/bookings');
 const app = express();
@@ -24,8 +24,8 @@ app.use(express.json());
 app.use(cookieParser());
 
 //Mount routers
-// app.use('/api/cars', cars);
-// app.use('/api/providers', providers);
+app.use('/api/cars', cars);
+app.use('/api/providers', providers);
 app.use('/api/users', users);
 // app.use('/api/bookings', bookings);
 const PORT=process.env.PORT || 5000;

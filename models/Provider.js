@@ -14,13 +14,14 @@ const ProviderSchema = new mongoose.Schema({
     length: 10,
     required: true
   },
+
 }
 ,{
   toJSON: {virtuals: true},
   toObject: {virtuals: true}})
 
 // Reverse populate with virtuals
-ProviderSchema.virtual('Car', {
+ProviderSchema.virtual('Cars', {
   ref: 'Car',
   localField: '_id',
   foreignField: 'provider',
