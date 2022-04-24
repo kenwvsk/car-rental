@@ -11,7 +11,7 @@ const CarSchema = new mongoose.Schema({
     required: [true, 'Please add a price'],
   },
   reservedDate: {
-    type: Array
+    type: Array,
   },
   provider: {
     type: mongoose.Schema.ObjectId,
