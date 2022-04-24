@@ -5,9 +5,10 @@ const {
   createCar,
   deleteCar,
 } = require('../controllers/cars');
+const {protect, authorize} = require('../middleware/users');
 const router = express.Router();
 
-router.route('/').get(getCars).post(createCar);
-router.route('/:id').get(getCar).delete(deleteCar);
+router.route('/').get(getCars).post(protect, authorize('admin'), createCar);
+router.route('/:id').get(getCar).delete(protect, authorize('admin'), deleteCar);
 
 module.exports = router;
