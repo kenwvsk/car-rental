@@ -85,11 +85,28 @@ exports.createBooking = async (req, res) => {
   req.body.user = req.user.id;
   // Check for existed booking
   const existedBookings = await Booking.find({ user: req.user.id });
-  // If the user is not an admin, they can only create 3 bookings.
-  if (existedBookings.length >= 3 && req.user.role !== 'admin') {
+  let allStartDate = existedBookings.map(x => x.startDate)
+  let allEndDate = existedBookings.map(x => x.endDate)
+  let dateList = [];
+  for (let i in allStartDate) {
+    let startDate = moment(allStartDate[i]);
+    let endDate = moment(allEndDate[i]);
+    while (startDate <= endDate) {
+      dateList.push(moment(startDate).format('YYYY-MM-DD'));
+      startDate = moment(startDate).add(1, 'days');
+    }
+  }
+  const count = {};
+  dateList.forEach(x => {
+    count[x] = (count[x] || 0) + 1;
+  });
+  console.log(count) // This show number of bookings in specifying date
+  let result = Object.keys(count).filter(key => count[key] >= 3)
+  // If the user is not an admin, they can only create 3 bookings in specifying date.
+  if (result.length != 0 && req.user.role !== 'admin') {
     return res.status(400).json({
       success: false,
-      msg: `The user with ID ${req.user.id} has already made 3 bookings`,
+      msg: `The user with ID ${req.user.id} has already made 3 cars at date ${result}`,
     });
   }
   //----------------------------------------------------------------------
@@ -119,7 +136,7 @@ exports.createBooking = async (req, res) => {
     } else {
       const booking = await Booking.create(req.body);
       car = await Car.findByIdAndUpdate(req.body.car, {
-        reservedDate: car.reservedDate.concat(dateList),
+        reservedDate: car.reservedDate.dateList,
       });
       return res.status(200).json({ success: true, data: booking });
     }
@@ -131,4 +148,49 @@ exports.createBooking = async (req, res) => {
   }
 };
 
-// Delete Booking, Update Booking
+// @desc    Delete Booking
+// @route   DELETE /api/v1/bookings/:id
+// @access  Private
+exports.deleteBooking = async (req, res) => {
+  try {
+    let booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      throw new SyntaxError('Cannot find data.');
+    }
+    if (
+      booking.user.toString() !== req.user.id
+      && req.user.role !== 'admin'
+    ) {
+      return res.status(401).json({
+        success: false,
+        msg: `User ${req.user.id} is not authorized to delete this booking`,
+      });
+    }
+    // Create Date Range
+    let dateList = [];
+    let startDate = moment(booking.startDate);
+    let endDate = moment(booking.endDate);
+    while (startDate <= endDate) {
+      dateList.push(moment(startDate).format('YYYY-MM-DD'));
+      startDate = moment(startDate).add(1, 'days');
+    }
+    // Delete reservedDate in Car
+    let car = await Car.findById(booking.car)
+    for (let i in dateList) {
+      car.reservedDate.remove(dateList[i]);
+    }
+    let updateList = car.reservedDate;
+    console.log(updateList)
+    car = await Car.findByIdAndUpdate(booking.car, {
+      reservedDate: updateList,
+    })
+    // Delete reservedDate in Car complete
+    booking = await booking.remove();
+    return res.status(200).json({ success: true, data: {} });
+  } catch (e) {
+    console.log(e);
+    return res
+      .status(500)
+      .json({ success: false, msg: 'Cannot delete Booking' });
+  }
+};
