@@ -145,7 +145,7 @@ exports.createBooking = async (req, res) => {
     } else {
       const booking = await Booking.create(req.body);
       car = await Car.findByIdAndUpdate(req.body.car, {
-        reservedDate: car.reservedDate.dateList,
+        reservedDate: car.reservedDate.concat(dateList)
       });
       return res.status(200).json({ success: true, data: booking });
     }
