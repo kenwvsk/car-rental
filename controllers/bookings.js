@@ -1,5 +1,6 @@
 const Booking = require('../models/Booking');
 const Car = require('../models/Car');
+const Provider = require('../models/Provider');
 const moment = require('moment');
 // @desc    Get single Booking
 // @route   api/bookings/:id
@@ -80,7 +81,7 @@ exports.getBookings = async (req, res) => {
 // @route   POST /api/bookings
 // @access  Private
 exports.createBooking = async (req, res) => {
-  //---------------------------------------------------------------------
+  //-------------------3 Cars at Specifying Date---------------------------
   // add user Id to req.body
   req.body.user = req.user.id;
   // Check for existed booking
@@ -100,8 +101,10 @@ exports.createBooking = async (req, res) => {
   dateList.forEach((x) => {
     count[x] = (count[x] || 0) + 1;
   });
-  console.log(count); // This show number of bookings in specifying date
-  let cannotReserve = Object.keys(count).filter((key) => count[key] >= 3); // return date that already has 3 cars
+  // This show number of bookings in specifying date
+  console.log(count);
+  // return date that already has 3 cars
+  let cannotReserve = Object.keys(count).filter((key) => count[key] >= 3); 
   // Check the request date
   let reqDateRange = [];
   let startDate = moment(req.body.startDate);
@@ -110,8 +113,10 @@ exports.createBooking = async (req, res) => {
     reqDateRange.push(moment(startDate).format('YYYY-MM-DD'));
     startDate = moment(startDate).add(1, 'days');
   }
+  // Check intersection between the request date & cannot reserve date
   let result = reqDateRange.filter(x => cannotReserve.includes(x));
-  // If the user is not an admin, they can only create 3 bookings in specifying date.
+  // If no intersection date, User can create booking
+  // If there are any intersection date (run if statement)
   if (result.length != 0 && req.user.role !== 'admin') {
     return res.status(400).json({
       success: false,
@@ -120,6 +125,14 @@ exports.createBooking = async (req, res) => {
   }
   //----------------------------------------------------------------------
   try {
+    //----------Check that Requested Car is belongs to Provider-------------
+    const provider = await Provider.findById(req.body.provider).populate('Cars')
+    const existedCar = provider.Cars.map((x) => x._id.toString())
+    const checkCar = existedCar.includes(req.body.car)
+    if (checkCar == false) {
+      throw new Error ('Your requested Car is not in your preferred Provider.')
+    }
+    //----------------------------------------------------------------------
     // Create Date Range
     let dateList = [];
     let startDate = moment(req.body.startDate);
@@ -134,7 +147,7 @@ exports.createBooking = async (req, res) => {
     if (car.reservedDate != []) {
       for (let i in dateList) {
         if (car.reservedDate.find((x) => x === dateList[i])) {
-          throw Error('Car is not available');
+          throw new Error('Car is not available');
         }
       }
       const booking = await Booking.create(req.body);

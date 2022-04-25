@@ -7,7 +7,7 @@ const Provider = require('../models/Provider');
 const getProviders = async (req,res) => {
   try {
     const providers = await Provider.find().populate('Cars');
-    console.log('GET ALL' + providers)
+    console.log('request: GET ALL PROVIDERS')
     return res.status(200).json({success: true, data: providers})
   } catch (e) {
     console.log(e.message)
@@ -25,7 +25,7 @@ const getProvider = async (req,res) => {
     if (!provider) {
       throw new SyntaxError('Cannot find data');
     }
-    console.log('GET by ID' + provider)
+    console.log('request: GET PROVIDER BY ID')
     return res.status(200).json({success: true, data: provider})
   } catch (e) {
     console.log(e.message)
@@ -40,7 +40,7 @@ const getProvider = async (req,res) => {
 const createProvider = async (req,res) => {
   try {
     const provider = await Provider.create(req.body);
-    console.log('POST' + provider)
+    console.log('request: CREATE PROVIDER')
     return res.status(200).json({success: true, data: provider})
   } catch (e) {
     console.log(e.message)
@@ -58,7 +58,7 @@ const deleteProvider = async (req,res) => {
     if (!provider) {
       throw new SyntaxError('Cannot find data');
     }
-    console.log('DELETE' + provider);
+    console.log('request: DELETE PROVIDER');
     provider.remove();
     return res.status(200).json({success: true, data: {} })
   } catch (e) {

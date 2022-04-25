@@ -10,7 +10,7 @@ const getCars = async (req,res) => {
       path: 'provider',
       select: '_id name address tel',
     });
-    console.log('GET ALL' + cars)
+    console.log('request: GET ALL CARS')
     return res.status(200).json({success: true, data: cars})
   } catch (e) {
     console.log(e.message)
@@ -31,7 +31,7 @@ const getCar = async (req,res) => {
     if (!car) {
       throw new SyntaxError('Cannot find data');
     }
-    console.log('GET BY ID' + car)
+    console.log('request: GET CAR BY ID')
     return res.status(200).json({success: true, data: car})
   } catch (e) {
     console.log(e.message)
@@ -46,7 +46,7 @@ const getCar = async (req,res) => {
 const createCar = async (req,res) => {
   try {
     const car = await Car.create(req.body);
-    console.log('POST' + car)
+    console.log('request: CREATE CAR')
     return res.status(200).json({success: true, data: car})
   } catch (e) {
     console.log(e.message)
@@ -64,7 +64,7 @@ const deleteCar = async (req,res) => {
     if (!car) {
       throw new SyntaxError('Cannot find data');
     }
-    console.log('DELETE' + car)
+    console.log('request: DELETE CAR')
     car.remove();
     return res.status(200).json({success: true, data: {} })
   } catch (e) {
