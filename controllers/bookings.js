@@ -2,6 +2,7 @@ const Booking = require('../models/Booking');
 const Car = require('../models/Car');
 const Provider = require('../models/Provider');
 const moment = require('moment');
+const { now } = require('moment');
 // @desc    Get single Booking
 // @route   api/bookings/:id
 // @access  Private
@@ -81,11 +82,19 @@ exports.getBookings = async (req, res) => {
 // @route   POST /api/bookings
 // @access  Private
 exports.createBooking = async (req, res) => {
+  //-------------------Check User Input Date ------------------------------
+  if (req.body.startDate <= new Date().toISOString()) {
+    return res.status(500).json({ success: false, msg: 'You cannot booking in the past' });
+  }
+  if (req.body.endDate <= req.body.startDate) {
+    return res.status(500).json({ success: false, msg: 'Please check your End Date' }); 
+  }
+  //-----------------------------------------------------------------------
   //-------------------3 Cars at Specifying Date---------------------------
   // add user Id to req.body
   req.body.user = req.user.id;
   // Check for existed booking
-  const existedBookings = await Booking.find({ user: req.user.id });
+  const existedBookings = await Booking.find({ user: req.user.id }); //GET ALL BOOKING from User
   let allStartDate = existedBookings.map((x) => x.startDate);
   let allEndDate = existedBookings.map((x) => x.endDate);
   let dateList = [];
@@ -198,8 +207,9 @@ exports.deleteBooking = async (req, res) => {
     }
     let updateList = car.reservedDate;
     console.log(updateList);
+    let reservedDate = updateList;
     car = await Car.findByIdAndUpdate(booking.car, {
-      reservedDate: updateList,
+      reservedDate,
     });
     // Delete reservedDate in Car complete
     booking = await booking.remove();
@@ -212,4 +222,69 @@ exports.deleteBooking = async (req, res) => {
   }
 };
 
-// Update Booking
+// @desc    Update Booking
+// @route   PUT /api/v1/bookings/:id
+// @access  Private
+exports.updateBooking = async (req, res) => {
+try {
+  if (!(req.body.startDate || req.body.endDate)) {
+    throw new Error ('Please provide update informations')
+  }
+  let { startDate , endDate } = req.body // cannot change Provider & Car , You have to cancel booking
+  let booking = await Booking.findById(req.params.id);
+  if (!booking) {
+    throw new SyntaxError('Cannot find data.');
+  }
+  // Make sure user is the booking owner
+  if (
+    booking.user.toString() !== req.user.id
+    && req.user.role !== 'admin'
+  ) {
+    return res.status(401).json({
+      success: false,
+      msg: `User ${req.user.id} is not authorized to update this booking`,
+    });
+  }
+  // --------------Delete reservedDate in Car------------
+  let deleteList = [];
+  let BookingstartDate = moment(booking.startDate);
+  let BookingendDate = moment(booking.endDate);
+  while (BookingstartDate <= BookingendDate) {
+    deleteList.push(moment(BookingstartDate).format('YYYY-MM-DD'));
+    BookingstartDate = moment(BookingstartDate).add(1, 'days');
+  }
+  let car = await Car.findById(booking.car);
+  for (let i in deleteList) {
+    car.reservedDate.remove(deleteList[i]);
+  }
+  let updateList = car.reservedDate;
+ 
+  car = await Car.updateOne({ _id: booking.car}, {
+        reservedDate: updateList,
+  });
+  console.log(`Updating ${updateList} to Car ${booking.car.model}`);
+  // ------------------------------------------------------
+  booking = await Booking.findByIdAndUpdate(req.params.id, { startDate , endDate }, {
+    new: true,
+    runValidators: true,
+  });
+  // //  --------------Add reservedDate in Car----------------
+  let addList = [];
+  startDate = moment(startDate);
+  endDate = moment(endDate);
+  while (startDate <= endDate) {
+    addList.push(moment(startDate).format('YYYY-MM-DD'));
+    startDate = moment(startDate).add(1,'days');
+  }
+  car = await Car.updateOne({ _id:booking.car}, {
+    reservedDate: addList.concat(updateList),
+  });
+  // //  ------------------------------------------------------
+  return res.status(200).json({ success: true, data: booking });
+} catch (e) {
+  console.log(e);
+  return res
+    .status(500)
+    .json({ success: false, msg: e.message});
+}
+};
