@@ -8,7 +8,7 @@ const {
 const { protect, authorize } = require('../middleware/users');
 const router = express.Router();
 
-router.route('/').get(protect, getBookings).post(protect, createBooking);
+router.route('/').get(protect, getBookings).post(protect, authorize('user'), createBooking);
 router
   .route('/:id')
   .get(protect, getBooking)

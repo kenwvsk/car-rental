@@ -10,7 +10,7 @@ const ProviderSchema = new mongoose.Schema({
     required: [true, 'Please add an adress'],
   },
   tel: {
-    type: Number,
+    type: String,
     length: 10,
     required: true
   },

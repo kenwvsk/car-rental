@@ -8,7 +8,7 @@ const getProviders = async (req,res) => {
   try {
     const providers = await Provider.find().populate('Cars');
     console.log('request: GET ALL PROVIDERS')
-    return res.status(200).json({success: true, data: providers})
+    return res.status(200).json({success: true,count: providers.length ,data: providers})
   } catch (e) {
     console.log(e.message)
     return res.status(500).json({success: false, msg: e.message})
@@ -35,7 +35,7 @@ const getProvider = async (req,res) => {
 
 // @des      Create Provider
 // @route    POST /api/providers/
-// @access   Public
+// @access   Private
 
 const createProvider = async (req,res) => {
   try {
@@ -48,9 +48,27 @@ const createProvider = async (req,res) => {
   }
 }
 
+// @des      Update Provider by ID
+// @route    PUT /api/providers/:id
+// @access   Private
+const updateProvider = async (req,res) => {
+  try {
+    const provider = await Provider.findByIdAndUpdate(req.params.id, req.body,{
+      new: true,
+      runValidators: true
+  });
+  if(!provider){
+      return res.status(400).json({success: false});
+  }
+  res. status(200).json({success: true, data: provider});
+  }catch(err){
+      res.status(400).json({success: false});
+  }
+}
+
 // @des      Delete Provider by ID
 // @route    DELETE /api/providers/:id
-// @access   Public
+// @access   Private
 
 const deleteProvider = async (req,res) => {
   try {
@@ -70,5 +88,6 @@ module.exports = {
   getProviders,
   getProvider,
   createProvider,
+  updateProvider,
   deleteProvider,
 };
