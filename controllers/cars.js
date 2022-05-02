@@ -47,7 +47,7 @@ const createCar = async (req,res) => {
   try {
     const car = await Car.create(req.body);
     console.log('request: CREATE CAR')
-    return res.status(200).json({success: true, data: car})
+    return res.status(201).json({success: true, data: car})
   } catch (e) {
     console.log(e.message)
     return res.status(500).json({success: false, msg: e.message})

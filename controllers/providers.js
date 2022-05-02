@@ -41,7 +41,7 @@ const createProvider = async (req,res) => {
   try {
     const provider = await Provider.create(req.body);
     console.log('request: CREATE PROVIDER')
-    return res.status(200).json({success: true, data: provider})
+    return res.status(201).json({success: true, data: provider})
   } catch (e) {
     console.log(e.message)
     return res.status(500).json({success: false, msg: e.message})

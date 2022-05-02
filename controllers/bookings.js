@@ -7,8 +7,24 @@ const { now } = require('moment');
 // @route   api/bookings/:id
 // @access  Private
 exports.getBooking = async (req, res) => {
-  try {
-    const booking = await Booking.findById(req.params.id)
+  let query
+  if (req.user.role !== 'admin') {
+    const checkingId = await Booking.findById(req.params.id)
+      .populate({
+        path: 'provider',
+        select: 'name address tel'
+      })
+      .populate({
+        path: 'car',
+        select: 'model price'
+      });
+      if (JSON.stringify(checkingId.user) == JSON.stringify(req.user._id)){
+        query = checkingId
+      }else{
+        return res.status(401).json({sucess:false, message:'Not authorize to access this route'});
+      }
+  }else if(req.user.role == 'admin'){
+    query = await Booking.findById(req.params.id)
       .populate({
         path: 'provider',
         select: 'name address tel',
@@ -17,12 +33,14 @@ exports.getBooking = async (req, res) => {
         path: 'car',
         select: 'model price',
       });
-    if (!booking) {
+    }else if (!booking){
       return res.status(404).json({
         success: false,
         msg: `No booking with the id ${req.params.id}`,
       });
     }
+    try {
+    const booking = await query;
     return res.status(200).json({ success: true, data: booking });
   } catch (e) {
     console.log(e);
@@ -371,7 +389,7 @@ try {
     reservedDate: addList.concat(updateList),
   });
   // //  ------------------------------------------------------
-  return res.status(200).json({ success: true, data: booking });
+  return res.status(201).json({ success: true, data: booking });
 } catch (e) {
   console.log(e);
   return res
