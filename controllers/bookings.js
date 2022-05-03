@@ -194,98 +194,6 @@ exports.createBooking = async (req, res) => {
     return res.status(500).json({ success: false, msg: e.message });
   }
 };
-
-// @desc    Update Booking
-// @route   POST /api/bookings/:Id
-// @access  Private
-exports.updateBooking = async (req, res) => {
-  //-------------------3 Cars at Specifying Date---------------------------
-  // add user Id to req.body
-  req.body.user = req.user.id;
-  // Check for existed booking
-  const existedBookings = await Booking.find({ user: req.user.id });
-  let allStartDate = existedBookings.map((x) => x.startDate);
-  let allEndDate = existedBookings.map((x) => x.endDate);
-  let dateList = [];
-  for (let i in allStartDate) {
-    let startDate = moment(allStartDate[i]);
-    let endDate = moment(allEndDate[i]);
-    while (startDate <= endDate) {
-      dateList.push(moment(startDate).format('YYYY-MM-DD'));
-      startDate = moment(startDate).add(1, 'days');
-    }
-  }
-  const count = {};
-  dateList.forEach((x) => {
-    count[x] = (count[x] || 0) + 1;
-  });
-  // This show number of bookings in specifying date
-  console.log(count);
-  // return date that already has 3 cars
-  let cannotReserve = Object.keys(count).filter((key) => count[key] >= 3); 
-  // Check the request date
-  let reqDateRange = [];
-  let startDate = moment(req.body.startDate);
-  let endDate = moment(req.body.endDate);
-  while (startDate <= endDate) {
-    reqDateRange.push(moment(startDate).format('YYYY-MM-DD'));
-    startDate = moment(startDate).add(1, 'days');
-  }
-  // Check intersection between the request date & cannot reserve date
-  let result = reqDateRange.filter(x => cannotReserve.includes(x));
-  // If no intersection date, User can create booking
-  // If there are any intersection date (run if statement)
-  if (result.length != 0 && req.user.role !== 'admin') {
-    return res.status(400).json({
-      success: false,
-      msg: `The user with ID ${req.user.id} has already made 3 cars at date ${result}`,
-    });
-  }
-  //----------------------------------------------------------------------
-  try {
-    //----------Check that Requested Car is belongs to Provider-------------
-    const provider = await Provider.findById(req.body.provider).populate('Cars')
-    const existedCar = provider.Cars.map((x) => x._id.toString())
-    const checkCar = existedCar.includes(req.body.car)
-    if (checkCar == false) {
-      throw new Error ('Your requested Car is not in your preferred Provider.')
-    }
-    //----------------------------------------------------------------------
-    // Create Date Range
-    let dateList = [];
-    let startDate = moment(req.body.startDate);
-    let endDate = moment(req.body.endDate);
-    while (startDate <= endDate) {
-      dateList.push(moment(startDate).format('YYYY-MM-DD'));
-      startDate = moment(startDate).add(1, 'days');
-    }
-    // Find Cars
-    let car = await Car.findById(req.body.car);
-    // Check Reserved Date
-    if (car.reservedDate != []) {
-      for (let i in dateList) {
-        if (car.reservedDate.find((x) => x === dateList[i])) {
-          throw new Error('Car is not available');
-        }
-      }
-      const booking = await Booking.create(req.body);
-      car = await Car.findByIdAndUpdate(req.body.car, {
-        reservedDate: car.reservedDate.concat(dateList),
-      });
-      return res.status(200).json({ success: true, data: booking });
-    } else {
-      const booking = await Booking.create(req.body);
-      car = await Car.findByIdAndUpdate(req.body.car, {
-        reservedDate: car.reservedDate.concat(dateList)
-      });
-      return res.status(200).json({ success: true, data: booking });
-    }
-  } catch (e) {
-    console.log(e);
-    return res.status(500).json({ success: false, msg: e.message });
-  }
-};
-
 // @desc    Delete Booking
 // @route   DELETE /api/bookings/:id
 // @access  Private
@@ -391,6 +299,7 @@ try {
     });
   }
   // Find Cars
+  console.log(booking.car)
   let car = await Car.findById(booking.car);
   // Check Reserved Date
   if (car.reservedDate != []) {
