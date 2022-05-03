@@ -41,16 +41,34 @@ const getCar = async (req,res) => {
 
 // @des      Create car
 // @route    POST /api/cars/
-// @access   Public
+// @access   Private
 
 const createCar = async (req,res) => {
   try {
     const car = await Car.create(req.body);
     console.log('request: CREATE CAR')
-    return res.status(200).json({success: true, data: car})
+    return res.status(201).json({success: true, data: car})
   } catch (e) {
     console.log(e.message)
     return res.status(500).json({success: false, msg: e.message})
+  }
+}
+
+// @des      Update Car by ID
+// @route    PUT /api/cars/:id
+// @access   Private
+const updateCar = async (req,res) => {
+  try {
+    const car = await Car.findByIdAndUpdate(req.params.id, req.body,{
+      new: true,
+      runValidators: true
+  });
+  if(!car){
+      return res.status(400).json({success: false});
+  }
+  res. status(200).json({success: true, data: car});
+  }catch(err){
+      res.status(400).json({success: false});
   }
 }
 
@@ -76,5 +94,6 @@ module.exports = {
   getCars,
   getCar,
   createCar,
+  updateCar,
   deleteCar,
 };

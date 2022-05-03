@@ -10,9 +10,12 @@ const ProviderSchema = new mongoose.Schema({
     required: [true, 'Please add an adress'],
   },
   tel: {
-    type: Number,
+    type: String,
     length: 10,
-    required: true
+    required: true,
+    match: [
+      /^0\d{9}$/, 'Please add valid tel.'
+  ]
   },
 
 }
