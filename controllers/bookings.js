@@ -245,6 +245,52 @@ try {
       msg: `User ${req.user.id} is not authorized to update this booking`,
     });
   }
+  const existedBookings = await Booking.find({ user: req.user.id }); //GET ALL BOOKING from User
+  let allStartDate = existedBookings.map((x) => x.startDate);
+  let allEndDate = existedBookings.map((x) => x.endDate);
+  let checkList = [];
+  for (let i in allStartDate) {
+    let checkStartDate = moment(allStartDate[i]);
+    let checkEndDate = moment(allEndDate[i]);
+    while (checkStartDate <= checkEndDate) {
+      checkList.push(moment(checkStartDate).format('YYYY-MM-DD'));
+      checkStartDate = moment(checkStartDate).add(1, 'days');
+    }
+  }
+  const count = {};
+  checkList.forEach((x) => {
+    count[x] = (count[x] || 0) + 1;
+  });
+  // This show number of bookings in specifying date
+  console.log(count);
+  // return date that already has 3 cars
+  let cannotReserve = Object.keys(count).filter((key) => count[key] >= 3);
+  // Check the request date
+  let reqDateRange = [];
+  let reqStartDate = moment(startDate);
+  let reqEndDate = moment(endDate);
+  while (reqStartDate <= reqEndDate) {
+    reqDateRange.push(moment(reqStartDate).format('YYYY-MM-DD'));
+    reqStartDate = moment(reqStartDate).add(1, 'days');
+  }
+  // Check intersection between the request date & cannot reserve date
+  let result = reqDateRange.filter(x => cannotReserve.includes(x));
+  if (result.length != 0 && req.user.role !== 'admin') {
+    return res.status(400).json({
+      success: false,
+      msg: `The user with ID ${req.user.id} has already made 3 cars at date ${result}`,
+    });
+  }
+  // Find Cars
+  let car = await Car.findById(booking.car);
+  // Check Reserved Date
+  if (car.reservedDate != []) {
+    for (let i in reqDateRange) {
+      if (car.reservedDate.find((x) => x === reqDateRange[i])) {
+        throw new Error('Car is not available');
+      }
+    }
+  } 
   // --------------Delete reservedDate in Car------------
   let deleteList = [];
   let BookingstartDate = moment(booking.startDate);
@@ -253,7 +299,7 @@ try {
     deleteList.push(moment(BookingstartDate).format('YYYY-MM-DD'));
     BookingstartDate = moment(BookingstartDate).add(1, 'days');
   }
-  let car = await Car.findById(booking.car);
+  // let car = await Car.findById(booking.car);
   for (let i in deleteList) {
     car.reservedDate.remove(deleteList[i]);
   }
